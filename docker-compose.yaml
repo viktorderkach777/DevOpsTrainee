@@ -1,47 +1,60 @@
-version: "3.7"
+version: '3.7'
+
 services:
-  drone:
-    image: drone/drone:1
-    depends_on:
-      - postgres
-    environment:
-      - DRONE_GITHUB_SERVER=https://github.com
-      - DRONE_GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
-      - DRONE_GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
-      - DRONE_RUNNER_CAPACITY=${RUNNER_CAPACITY}
-      - DRONE_RUNNER_NETWORKS=${TRAEFIK_NETWORK}
-      - DRONE_SERVER_HOST=${DOMAIN}
-      - DRONE_SERVER_PROTO=https
-      - DRONE_TLS_AUTOCERT=false
-      - DRONE_DATABASE_DRIVER=postgres
-      - DRONE_DATABASE_DATASOURCE=postgres://drone:${DB_PASSWORD}@postgres:5432/drone?sslmode=disable
-      - DRONE_DATABASE_SECRET=${DB_SECRET}
-      - DRONE_USER_CREATE=username:${ADMIN_USERNAME},admin:true
-      - DRONE_USER_FILTER=${ADMIN_USERNAME}
-      - DRONE_REPOSITORY_FILTER=${REPOSITORY_FILTER}
+#Drone services
+  drone-server:
+    image: drone/drone:0.8
     networks:
-      - traefik
+      - private
+    ports:
+      - 8000:8000
+      - 9000:9000
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - drone:/data
-    labels:
-      traefik.enable: true
-      traefik.frontend.rule: "Host:${DOMAIN}"
-    restart: unless-stopped
-  postgres:
-    image: postgres
+      - ./drone-data:/var/lib/drone/
+    env_file:
+      - ./drone.env
+    restart: always 
     environment:
-      - POSTGRES_USER=drone
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    networks:
-      - traefik
-    volumes:
-      - postgres:/var/lib/postgresql/data
-    restart: unless-stopped
-volumes:
-  drone:
-  postgres:
+      - DRONE_OPEN=true
+      - DRONE_HOST=http://localhost:8000
+      - DRONE_GITHUB=true
+      - DRONE_DEBUG=false
+      - DRONE_GITHUB_CLIENT=b0591ee4b18c2504e26d
+      - DRONE_GITHUB_SECRET=7aea76d45c91a307d4f0315981f2a03a2b3f95fa
+      - DRONE_SECRET=sstest
+
+    drone-agent:
+      image: drone/agent:0.8
+      command: agent
+      restart: always
+      networks:
+        - private
+      depends_on:
+        - drone-server
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+       env_file:
+         - ./drone.env
+       enviroment:
+         - DRONE_SERVER=drone-server:9000
+         - DRONE_SECRET=sstest
+
+
+     minio:
+       image: minio/minio
+     volumes:
+       - /tmp/data/:/export
+       - /tmp/config/:root/.minio
+     networks:
+       - private
+     depends_on:
+      - drone-server
+     ports:
+       - "9001:9000"
+     environment:
+        MINIO_ACCESS_KEY: minio
+        MINIO_SECRET_KEY: minio124
+     command: server /export
+
 networks:
-  traefik:
-    name: ${TRAEFIK_NETWORK}
-    external: true
+  private: 
