@@ -1,0 +1,81 @@
+---
+pipeline:
+  build:
+    image: golang
+    # script:
+      #- ./droneCi/local/scripts/script.sh
+    #environment:
+    #- GOPATH=/drone
+    commands:
+      - echo "hello world"
+      - go build main.go
+    when:
+      event: [ push, pull_request, tag ]
+  minio_s3:
+    image: plugins/s3
+    bucket: temp
+    access_key: minio
+    secret_key: minio124
+    source: "*.*"
+    target: /
+    path_style: true
+    endpoint: http://51d75091.ngrok.io
+  gmail_notify:
+    image: drillster/drone-email
+    host: smtp.gmail.com
+    username: laschuk.oleksandr@gmail.com
+    password: slash261086
+    from: laschuk.oleksandr@gmail.com
+    attachment: main.go
+    recipients:
+      - olasc@softserveinc.com
+    when:
+      event: push
+      branch: [dev]
+      status: [success,changed, failure]
+  webhook_succes:
+    image: plugins/webhook
+    debug: true
+    method: POST
+    username: laschuk.oleksandr@gmail.com
+    password: 1q2w3e4r
+    urls: https://hooks.slack.com/services/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
+    content_type: application/json
+    template: |
+      {
+        "fallback": "Required text summary of the attachment that is shown by clients that understand attachments but choose not to show them.",
+        "text": "DRONE CI Notification!",
+        "color": "#3d2ead",
+        "fields": [	
+          {
+            "title": "Build Status", 
+            "value": "Status - {{build.status}},\n Git Repo - {{repo.name}},\n Owner - {{repo.owner}}.\n",         
+          }
+          ]
+      }	
+    when:
+      status: [success,changed]
+  webhook_failure:
+    image: plugins/webhook
+    debug: true
+    method: POST
+    username: laschuk.oleksandr@gmail.com
+    password: 1q2w3e4r
+    urls: https://hooks.slack.com/services/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
+    content_type: application/json
+    template: |
+      {
+        "fallback": "Required text summary of the attachment that is shown by clients that understand attachments but choose not to show them.",
+        "text": "DRONE CI Notification!",
+        "color": "danger",
+        "fields": [	
+          {
+            "title": "Build Status", 
+            "value": "Status - {{build.status}},\n Git Repo - {{repo.name}},\n Owner - {{repo.owner}}.\n",         
+          }
+          ]
+      }	
+    when:
+      status: [failure]
+      
+#######

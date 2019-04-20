@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: drone-config
+  namespace: drone
+data:
+
+  #######################
+  # Drone Server Config #
+  #######################
+
+  # server host name
+  server.host: http://drone.sstest.com
+  # start the server in debug mode
+  server.debug: "true"
+  # open user registration
+  server.open: "true"
+  # database driver, defaul as sqlite3
+  server.database.driver: sqlite3
+  # database driver configuration string
+  server.database.datasource: drone.sqlite
+  # list of admin users
+  server.admin: appleboy
+
+  # remote parameters (GitHub)
+  server.remote.github: "true"
+  server.remote.github.client: c485b30d2f5d0ce89b4a
+  server.remote.github.secret: a38d9894ef5c016ea36bf8b1c06dc7cb1a24f1bb
+
+  # remote parameters (Gitea)
+  server.remote.gitea: "false"
+  server.remote.gitea.url: "https://try.gitea.io"
+  server.remote.gitea.skip.verify: "true"
+
+  ######################
+  # Drone Agent Config #
+  ######################
+
+  agent.debug: "true"
+  agent.debug.pretty: "true"
+  agent.max.procs: "1"
+  agent.healthcheck: "true"
+  agent.keepalive.time: "1s"
+  agent.keepalive.timeout: "5s"

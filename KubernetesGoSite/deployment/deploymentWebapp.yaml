@@ -1,0 +1,57 @@
+---
+  apiVersion: apps/v1beta2
+  kind: Deployment
+  metadata: 
+    name: webapp
+    namespace: webappnsp
+  spec:
+    replicas: 2
+    strategy:
+      type: RollingUpdate
+    revisionHistoryLimit: 10 #how many old ReplicaSets for this Deployment you want to retain.
+    selector:
+      matchLabels:
+        app: webapp
+    template:
+      metadata:
+        labels:
+          app: webapp
+      spec:
+        terminationGracePeriodSeconds: 10
+        containers:
+          - name: front-end
+            image: nginx #some image name from repo, that you builded before
+            imagePullPolicy: IfNotPresent
+            resources:
+              limits:
+                cpu: 400m
+                memory: 1024Mi
+              requests:
+                cpu: 200m
+                memory: 512Mi
+            ports:
+              - name: http
+                containerPort: 8101
+            livenessProbe:
+              httpGet:
+                path: /liveness
+                port: 8101
+              initialDelaySeconds: 60
+              timeoutSeconds: 2
+              periodSeconds: 5
+            readinessProbe:
+              httpGet:
+                path: /readiness
+                port: 5000
+              initialDelaySeconds: 10
+              timeoutSeconds: 2
+              periodSeconds: 5
+            env:
+              - name: "CONFIGURATION_ITEM"
+                value: "value"
+        restartPolicy: Always
+        volumes:
+          - name: www
+            persistentVolumeClaim:
+              claimName: www
+    
